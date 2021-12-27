@@ -202,8 +202,9 @@ class CarInterface(CarInterfaceBase):
       tire_stiffness_factor = 0.75
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.05]]
 
-    elif candidate == CAR.HRV:
-      stop_and_go = False
+    #Nae change from HRV to HRV_22
+    elif candidate == CAR.HRV_22:
+      stop_and_go = True
       ret.mass = 3125 * CV.LB_TO_KG + STD_CARGO_KG
       ret.wheelbase = 2.61
       ret.centerToFront = ret.wheelbase * 0.41
