@@ -1439,7 +1439,7 @@ DBC = {
   CAR.HONDA_E: dbc_dict('acura_rdx_2020_can_generated', None),
   CAR.CIVIC_22: dbc_dict('honda_civic_ex_2022_can_generated', None),
   #Nae
-  CAR.HRV_22: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
+  CAR.HRV_22: dbc_dict('honda_fit_hybrid_2018_can_generated', None),
 }
 
 STEER_THRESHOLD = {
