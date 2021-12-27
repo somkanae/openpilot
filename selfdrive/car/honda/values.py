@@ -78,6 +78,8 @@ class CAR:
   FIT = "HONDA FIT 2018"
   FREED = "HONDA FREED 2020"
   HRV = "HONDA HRV 2019"
+  #Nae
+  HRV_22 = "HONDA HRV 2022"
   ODYSSEY = "HONDA ODYSSEY 2018"
   ODYSSEY_CHN = "HONDA ODYSSEY CHN 2019"
   ACURA_RDX = "ACURA RDX 2018"
@@ -1352,6 +1354,28 @@ FW_VERSIONS = {
       b'57114-TYF-E030\x00\x00'
     ],
   },
+  #Nae
+  CAR.HRV_22:{
+    (Ecu.eps, 0x18DA53F1, None):[
+      b'39990-3M0-J030\x00\x00'
+    ],
+    (Ecu.gateway, 0x18DAEFF1, None):[
+      b'38897-3M0-Z010\x00\x00',
+    ],
+    (Ecu.srs, 0x18DA53F1, None):[
+      b'77959-3N1-Z840\x00\x00'
+    ],
+    (Ecu.combinationMeter, 0x18DA60F1, None):[
+      b'78109-3N0-TA10\x00\x00',
+    ],
+    # This car doesn't have a radar, so is this really the camera fw?
+    (Ecu.fwdRadar, 0x18DAB0F1, None): [
+      b'8S102-3M3-T050\x00\x00'
+    ],
+    (Ecu.vsa, 0x18DA28F1, None):[
+      b'57114-3N1-T020\x00\x00'
+    ],
+  },  
   CAR.CIVIC_22:{
     (Ecu.eps, 0x18DA30F1, None):[
       b'39990-T39-A130\x00\x00',
@@ -1404,6 +1428,7 @@ DBC = {
   CAR.FIT: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
   CAR.FREED: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
   CAR.HRV: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
+  
   CAR.ODYSSEY: dbc_dict('honda_odyssey_exl_2018_generated', 'acura_ilx_2016_nidec'),
   CAR.ODYSSEY_CHN: dbc_dict('honda_odyssey_extreme_edition_2018_china_can_generated', 'acura_ilx_2016_nidec'),
   CAR.PILOT: dbc_dict('honda_pilot_touring_2017_can_generated', 'acura_ilx_2016_nidec'),
@@ -1413,6 +1438,8 @@ DBC = {
   CAR.INSIGHT: dbc_dict('honda_insight_ex_2019_can_generated', None),
   CAR.HONDA_E: dbc_dict('acura_rdx_2020_can_generated', None),
   CAR.CIVIC_22: dbc_dict('honda_civic_ex_2022_can_generated', None),
+  #Nae
+  CAR.HRV_22: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
 }
 
 STEER_THRESHOLD = {
@@ -1427,4 +1454,5 @@ HONDA_NIDEC_ALT_SCM_MESSAGES = {CAR.ACURA_ILX, CAR.ACURA_RDX, CAR.CRV, CAR.CRV_E
 HONDA_BOSCH = {CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_5G,
                    CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E}
 HONDA_BOSCH_ALT_BRAKE_SIGNAL = {CAR.ACCORD, CAR.CRV_5G, CAR.ACURA_RDX_3G}
-HONDA_RADARLESS = {CAR.CIVIC_22, }
+#Nae
+HONDA_RADARLESS = {CAR.CIVIC_22, CAR.HRV_22 }
