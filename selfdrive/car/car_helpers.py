@@ -81,7 +81,8 @@ interfaces = load_interfaces(interface_names)
 
 # **** for use live only ****
 def fingerprint(logcan, sendcan):
-  fixed_fingerprint = os.environ.get('FINGERPRINT', "")
+  # Nae add "HONDA HRV 2022"
+  fixed_fingerprint = os.environ.get('FINGERPRINT', "HONDA HRV 2022")
   skip_fw_query = os.environ.get('SKIP_FW_QUERY', False)
 
   if not fixed_fingerprint and not skip_fw_query:
