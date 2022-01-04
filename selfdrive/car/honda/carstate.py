@@ -107,7 +107,7 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
     else:
       checks += [("CRUISE_PARAMS", 50)]
 
-  if CP.carFingerprint in (CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_22):
+  if CP.carFingerprint in (CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_22, CAR.HRV_HYBRID):
     signals += [("DRIVERS_DOOR_OPEN", "SCM_FEEDBACK", 1)]
   elif CP.carFingerprint == CAR.ODYSSEY_CHN:
     signals += [("DRIVERS_DOOR_OPEN", "SCM_BUTTONS", 1)]
@@ -185,7 +185,7 @@ class CarState(CarStateBase):
 
     # ******************* parse out can *******************
     # TODO: find wheels moving bit in dbc
-    if self.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_22):
+    if self.CP.carFingerprint in (CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_22, CAR.HRV_HYBRID):
       ret.standstill = cp.vl["ENGINE_DATA"]["XMISSION_SPEED"] < 0.1
       ret.doorOpen = bool(cp.vl["SCM_FEEDBACK"]["DRIVERS_DOOR_OPEN"])
     elif self.CP.carFingerprint == CAR.ODYSSEY_CHN:
@@ -237,7 +237,7 @@ class CarState(CarStateBase):
     ret.brakeHoldActive = cp.vl["VSA_STATUS"]["BRAKE_HOLD_ACTIVE"] == 1
 
     if self.CP.carFingerprint in (CAR.CIVIC, CAR.ODYSSEY, CAR.ODYSSEY_CHN, CAR.CRV_5G, CAR.ACCORD, CAR.ACCORDH, CAR.CIVIC_BOSCH,
-                                  CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_22):
+                                  CAR.CIVIC_BOSCH_DIESEL, CAR.CRV_HYBRID, CAR.INSIGHT, CAR.ACURA_RDX_3G, CAR.HONDA_E, CAR.CIVIC_22, CAR.HRV_HYBRID):
       self.park_brake = cp.vl["EPB_STATUS"]["EPB_STATE"] != 0
     else:
       self.park_brake = 0  # TODO
@@ -325,7 +325,8 @@ class CarState(CarStateBase):
   def get_can_parser(self, CP):
     signals, checks = get_can_signals(CP, self.gearbox_msg, self.main_on_sig_msg)
     bus_pt = 1 if CP.carFingerprint in HONDA_BOSCH else 0
-    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, bus_pt)
+    checks = []
+    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, bus_pt, False)
 
   @staticmethod
   def get_cam_can_parser(CP):
@@ -354,8 +355,8 @@ class CarState(CarStateBase):
         ("ACC_HUD", 10),
         ("BRAKE_COMMAND", 50),
       ]
-
-    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2)
+    checks = []
+    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2, False)
 
   @staticmethod
   def get_body_can_parser(CP):
@@ -368,5 +369,6 @@ class CarState(CarStateBase):
         ("BSM_STATUS_RIGHT", 3),
       ]
       bus_body = 0 # B-CAN is forwarded to ACC-CAN radar side (CAN 0 on fake ethernet port)
-      return CANParser(DBC[CP.carFingerprint]["body"], signals, checks, bus_body)
+      checks = []
+      return CANParser(DBC[CP.carFingerprint]["body"], signals, checks, bus_body, False)
     return None
