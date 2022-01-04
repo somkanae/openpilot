@@ -1,6 +1,6 @@
 ![](https://i.imgur.com/b0ZyIx5.jpg)
 
-Try For Honda HRV eHEV 2022
+Try For Honda HRV eHEV 2022 with help from eFini on Discord
 
 Table of Contents
 =======================
