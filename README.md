@@ -2,6 +2,8 @@
 
 **Try For Honda HRV eHEV 2022 with help from eFini on Discord**
 
+-Steering Openpilot work well
+-Stock ACC
 -Hill Descent error alert
 
 
