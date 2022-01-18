@@ -48,7 +48,7 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
 
-def create_acc_commands(packer, enabled, active, accel, gas, idx, stopping, starting, car_fingerprint):
+def create_acc_commands(packer, enabled, active, accel, gas, idx, stopping, car_fingerprint):
   commands = []
   bus = get_pt_bus(car_fingerprint)
   min_gas_accel = CarControllerParams.BOSCH_GAS_LOOKUP_BP[0]
@@ -58,7 +58,7 @@ def create_acc_commands(packer, enabled, active, accel, gas, idx, stopping, star
   accel_command = accel if active else 0
   braking = 1 if active and accel < min_gas_accel else 0
   standstill = 1 if active and stopping else 0
-  standstill_release = 1 if active and starting else 0
+  standstill_release = 1 if active and not stopping else 0
 
   acc_control_values = {
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
@@ -144,8 +144,9 @@ def create_ui_commands(packer, CP, pcm_speed, hud, is_metric, idx, stock_hud):
     'SET_ME_X41': 0x41,
     'SET_ME_X48': 0x48,
     'STEERING_REQUIRED': hud.steer_required,
-    'SOLID_LANES' : hud.lanes,
+    'SOLID_LANES': hud.lanes,
     'LANE_LINES': 3,
+    'DASHED_LANES': hud.lanes,
     'BEEP': 0,
   }
 
@@ -178,12 +179,3 @@ def spam_buttons_command(packer, button_val, idx, car_fingerprint):
   }
   bus = get_pt_bus(car_fingerprint)
   return packer.make_can_msg("SCM_BUTTONS", bus, values, idx)
-
-def create_lkas_command(packer, val, idx):
-    # 2022 Honda civic only
-    values = {
-      "RIGHT_LANE" : 3,
-      "LEFT_LANE" : 3,
-    }
-    bus = 0
-    return packer.make_can_msg("LKAS_HUD_2", bus, values, idx)
