@@ -77,6 +77,7 @@ routes = [
   CarTestRoute("03be5f2fd5c508d1|2020-04-19--18-44-15", HONDA.HRV),
   CarTestRoute("320098ff6c5e4730|2023-04-13--17-47-46", HONDA.HRV_3G),
   CarTestRoute("1e4baee1aa2687a0|2023-04-11--11-42-42", HONDA.HRV_EHEV),
+  CarTestRoute("1e4baee1aa2687a0|2023-04-12--15-23-28", HONDA.HRV_EHEV), # openpilot longitudinal
   CarTestRoute("917b074700869333|2021-05-24--20-40-20", HONDA.ACURA_ILX),
   CarTestRoute("08a3deb07573f157|2020-03-06--16-11-19", HONDA.ACCORD),  # 1.5T
   CarTestRoute("1da5847ac2488106|2021-05-24--19-31-50", HONDA.ACCORD),  # 2.0T
