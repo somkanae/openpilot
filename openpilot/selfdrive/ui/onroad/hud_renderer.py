@@ -27,6 +27,7 @@ class FontSizes:
   speed_unit: int = 66
   max_speed: int = 40
   set_speed: int = 90
+  engine_rpm: int = 60
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,7 @@ class HudRenderer(Widget):
     self.is_cruise_available: bool = True
     self.set_speed: float = SET_SPEED_NA
     self.speed: float = 0.0
+    self.engine_rpm: float = 0.0
     self.v_ego_cluster_seen: bool = False
 
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
@@ -73,6 +75,7 @@ class HudRenderer(Widget):
       self.is_cruise_set = False
       self.set_speed = SET_SPEED_NA
       self.speed = 0.0
+      self.engine_rpm = 0.0
       return
 
     controls_state = sm['controlsState']
@@ -93,6 +96,7 @@ class HudRenderer(Widget):
     v_ego = v_ego_cluster if self.v_ego_cluster_seen else car_state.vEgo
     speed_conversion = CV.MS_TO_KPH if ui_state.is_metric else CV.MS_TO_MPH
     self.speed = max(0.0, v_ego * speed_conversion)
+    self.engine_rpm = max(0.0, car_state.engineRpm)
 
   def _render(self, rect: rl.Rectangle) -> None:
     """Render HUD elements to the screen."""
@@ -110,6 +114,7 @@ class HudRenderer(Widget):
       self._draw_set_speed(rect)
 
     self._draw_current_speed(rect)
+    self._draw_engine_rpm(rect)
 
   def _draw_set_speed(self, rect: rl.Rectangle) -> None:
     """Draw the MAX speed indicator box."""
@@ -165,3 +170,10 @@ class HudRenderer(Widget):
     unit_text_size = measure_text_cached(self._font_medium, unit_text, FONT_SIZES.speed_unit)
     unit_pos = rl.Vector2(rect.x + rect.width / 2 - unit_text_size.x / 2, 290 - unit_text_size.y / 2)
     rl.draw_text_ex(self._font_medium, unit_text, unit_pos, FONT_SIZES.speed_unit, 0, COLORS.WHITE_TRANSLUCENT)
+
+  def _draw_engine_rpm(self, rect: rl.Rectangle) -> None:
+    """Draw engine RPM at the middle of the right edge."""
+    rpm_text = f"{round(self.engine_rpm)} rpm"
+    rpm_text_size = measure_text_cached(self._font_bold, rpm_text, FONT_SIZES.engine_rpm)
+    rpm_pos = rl.Vector2(rect.x + rect.width - 60 - rpm_text_size.x, rect.y + rect.height / 2 - rpm_text_size.y / 2)
+    rl.draw_text_ex(self._font_bold, rpm_text, rpm_pos, FONT_SIZES.engine_rpm, 0, COLORS.WHITE)
