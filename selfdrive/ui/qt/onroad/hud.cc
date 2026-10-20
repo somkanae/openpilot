@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include <QLocale>
+
 #include "selfdrive/ui/qt/util.h"
 
 constexpr int SET_SPEED_NA = 255;
@@ -13,10 +15,13 @@ void HudRenderer::updateState(const UIState &s) {
   status = s.status;
 
   const SubMaster &sm = *(s.sm);
+  device_temp = sm["deviceState"].getDeviceState().getMaxTempC();
   if (sm.rcv_frame("carState") < s.scene.started_frame) {
     is_cruise_set = false;
     set_speed = SET_SPEED_NA;
     speed = 0.0;
+    engine_rpm = 0.0;
+    engine_temp = 0.0;
     return;
   }
 
@@ -36,6 +41,8 @@ void HudRenderer::updateState(const UIState &s) {
   v_ego_cluster_seen = v_ego_cluster_seen || car_state.getVEgoCluster() != 0.0;
   float v_ego = v_ego_cluster_seen ? car_state.getVEgoCluster() : car_state.getVEgo();
   speed = std::max<float>(0.0f, v_ego * (is_metric ? MS_TO_KPH : MS_TO_MPH));
+  engine_rpm = std::max<float>(0.0f, car_state.getEngineRpmDEPRECATED());
+  engine_temp = car_state.getGasDEPRECATED();  // coolant temp, see honda carstate
 }
 
 void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
@@ -52,6 +59,9 @@ void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
     drawSetSpeed(p, surface_rect);
   }
   drawCurrentSpeed(p, surface_rect);
+  drawEngineRpm(p, surface_rect);
+  drawDeviceTemp(p, surface_rect);
+  drawEngineTemp(p, surface_rect);
 
   p.restore();
 }
@@ -101,6 +111,62 @@ void HudRenderer::drawCurrentSpeed(QPainter &p, const QRect &surface_rect) {
 
   p.setFont(InterFont(66));
   drawText(p, surface_rect.center().x(), 290, is_metric ? tr("km/h") : tr("mph"), 200);
+}
+
+static int maxDigitWidth(const QFontMetrics &fm) {
+  int digit_w = 0;
+  for (char c = '0'; c <= '9'; c++) digit_w = std::max(digit_w, fm.horizontalAdvance(QChar(c)));
+  return digit_w;
+}
+
+// Draw text right-aligned at right_x, with every digit in a fixed-width cell so values don't jitter
+static void drawFixedDigits(QPainter &p, int right_x, int baseline, const QString &text) {
+  const QFontMetrics fm = p.fontMetrics();
+  const int digit_w = maxDigitWidth(fm);
+  int x = right_x;
+  for (int i = text.size() - 1; i >= 0; i--) {
+    const QChar ch = text[i];
+    const int cell_w = ch.isDigit() ? digit_w : fm.horizontalAdvance(ch);
+    x -= cell_w;
+    p.drawText(x + (cell_w - fm.horizontalAdvance(ch)) / 2, baseline, QString(ch));
+  }
+}
+
+void HudRenderer::drawEngineRpm(QPainter &p, const QRect &surface_rect) {
+  p.setFont(InterFont(60, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  const QFontMetrics fm = p.fontMetrics();
+  const int baseline = surface_rect.center().y() + (fm.ascent() - fm.descent()) / 2;
+
+  const QString unit = " rpm";
+  const int unit_x = surface_rect.right() - 60 - fm.horizontalAdvance(unit);
+  p.drawText(unit_x, baseline, unit);
+  drawFixedDigits(p, unit_x, baseline, QLocale(QLocale::English).toString((int)std::nearbyint(engine_rpm)));
+}
+
+void HudRenderer::drawDeviceTemp(QPainter &p, const QRect &surface_rect) {
+  p.setFont(InterFont(60, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  const QFontMetrics fm = p.fontMetrics();
+  const int baseline = surface_rect.center().y() + (fm.ascent() - fm.descent()) / 2;
+
+  // reserve 3 digit cells so the unit stays put
+  const int unit_x = surface_rect.left() + 60 + 3 * maxDigitWidth(fm);
+  drawFixedDigits(p, unit_x, baseline, QString::number((int)std::nearbyint(device_temp)));
+  p.drawText(unit_x, baseline, QString::fromUtf8(" °C"));
+}
+
+void HudRenderer::drawEngineTemp(QPainter &p, const QRect &surface_rect) {
+  p.setFont(InterFont(60, QFont::Bold));
+  p.setPen(QColor(255, 255, 255));
+  const QFontMetrics fm = p.fontMetrics();
+  // one line below the rpm, units right-aligned with it
+  const int baseline = surface_rect.center().y() + (fm.ascent() - fm.descent()) / 2 + fm.height();
+
+  const QString unit = QString::fromUtf8(" °C");
+  const int unit_x = surface_rect.right() - 60 - fm.horizontalAdvance(unit);
+  p.drawText(unit_x, baseline, unit);
+  drawFixedDigits(p, unit_x, baseline, QString::number((int)std::nearbyint(engine_temp)));
 }
 
 void HudRenderer::drawText(QPainter &p, int x, int y, const QString &text, int alpha) {

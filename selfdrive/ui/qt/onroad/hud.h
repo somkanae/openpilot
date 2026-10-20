@@ -14,9 +14,15 @@ public:
 private:
   void drawSetSpeed(QPainter &p, const QRect &surface_rect);
   void drawCurrentSpeed(QPainter &p, const QRect &surface_rect);
+  void drawEngineRpm(QPainter &p, const QRect &surface_rect);
+  void drawDeviceTemp(QPainter &p, const QRect &surface_rect);
+  void drawEngineTemp(QPainter &p, const QRect &surface_rect);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
 
   float speed = 0;
+  float engine_rpm = 0;
+  float device_temp = 0;
+  float engine_temp = 0;
   float set_speed = 0;
   bool is_cruise_set = false;
   bool is_cruise_available = true;

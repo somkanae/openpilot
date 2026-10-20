@@ -72,6 +72,9 @@ class CarState(CarStateBase):
     # STANDSTILL->WHEELS_MOVING bit can be noisy around zero, so use XMISSION_SPEED
     # panda checks if the signal is non-zero
     ret.standstill = cp.vl["ENGINE_DATA"]["XMISSION_SPEED"] < 1e-5
+    ret.engineRpmDEPRECATED = cp.vl["POWERTRAIN_DATA"]["ENGINE_RPM"]
+    # HR-V e:HEV: CRUISE (0x324) byte 0 is coolant temp (A - 40); carried to the UI in an unused deprecated field
+    ret.gasDEPRECATED = cp.vl["CRUISE"]["HUD_SPEED_KPH"] - 40
 
     # doorOpen is true if we can find any door open, but signal locations vary, and we may only see the driver's door
     # TODO: Test the eight Nidec cars without SCM signals for driver's door state, may be able to consolidate further
