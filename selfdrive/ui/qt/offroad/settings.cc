@@ -275,12 +275,28 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   });
   addItem(translateBtn);
 
+  // fuel log: the oild process picks up the request file and posts to the Atlantis Oil tab
+  auto oilBtn = new ButtonControl(tr("Fuel Log"), tr("UPLOAD"), "");
+  connect(oilBtn, &ButtonControl::showDescriptionEvent, [=]() {
+    oilBtn->setDescription(QString::fromStdString(util::read_file("/data/oil/status.txt")));
+  });
+  connect(oilBtn, &ButtonControl::clicked, [=]() {
+    // baht paid at the pump; empty = fill it in on the web later
+    QString baht = InputDialog::getText(tr("Baht paid (empty = enter on the web later)"), this, tr("Upload fuel log: odometer and trip are added automatically"), false, -1);
+    if (baht.isNull()) return;  // cancelled
+    const std::string req = baht.trimmed().toStdString();
+    util::write_file("/data/oil/request", req.data(), req.size(), O_WRONLY | O_CREAT | O_TRUNC);
+    oilBtn->setDescription(tr("Queued, sending..."));
+    oilBtn->showDescription();
+  });
+  addItem(oilBtn);
+
   QObject::connect(uiState()->prime_state, &PrimeState::changed, [this] (PrimeState::Type type) {
     pair_device->setVisible(type == PrimeState::PRIME_TYPE_UNPAIRED);
   });
   QObject::connect(uiState(), &UIState::offroadTransition, [=](bool offroad) {
     for (auto btn : findChildren<ButtonControl *>()) {
-      if (btn != pair_device && btn != resetCalibBtn) {
+      if (btn != pair_device && btn != resetCalibBtn && btn != oilBtn) {
         btn->setEnabled(offroad);
       }
     }
