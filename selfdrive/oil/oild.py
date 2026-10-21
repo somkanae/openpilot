@@ -6,7 +6,7 @@ from the latest CAN packet and keeps running totals in /data/oil/state.json.
 Any time: when the UI creates /data/oil/request (Settings > Device > Fuel Log > UPLOAD),
 queue a fill-up record and POST it to the Atlantis Oil tab. Failed posts stay queued and retry.
 """
-import json, os, time, uuid, urllib.request
+import json, os, time, uuid, urllib.error, urllib.request
 
 import cereal.messaging as messaging
 from openpilot.common.params import Params
@@ -16,6 +16,7 @@ OIL_DIR = "/data/oil"
 STATE = f"{OIL_DIR}/state.json"
 CONFIG = f"{OIL_DIR}/config.json"      # {"url": ..., "token": ..., "units_per_litre": null}
 QUEUE = f"{OIL_DIR}/queue.jsonl"
+REJECTED = f"{OIL_DIR}/rejected.jsonl"  # records the server refused (4xx other than 429), kept for a manual look
 REQUEST = f"{OIL_DIR}/request"         # created by the UI button
 STATUS = f"{OIL_DIR}/status.txt"       # shown under the UI button
 LAST_PRICE = f"{OIL_DIR}/last_price.txt"  # default for the next price input
@@ -137,10 +138,19 @@ def flush_queue(cfg) -> int:
       with urllib.request.urlopen(req, timeout=10) as r:
         if r.status // 100 != 2:
           raise RuntimeError(f"HTTP {r.status}")
-      set_status(f"sent: odo {rec['odo_km']} km, trip {rec['trip_km']} km")
+      set_status(f"uploaded: odo {rec['odo_km']} km, trip {rec['trip_km']} km" + (f" ({len(left)} more waiting)" if left else ""))
+    except urllib.error.HTTPError as e:
+      if e.code == 429 or e.code >= 500:
+        left.insert(0, rec)
+        set_status(f"saved on comma, server busy ({e.code}), {len(pending)} waiting")
+      else:
+        with open(REJECTED, "a") as f:
+          f.write(json.dumps({"code": e.code, "body": e.read().decode(errors="replace")[:200], "rec": rec}) + "\n")
+        set_status(f"server rejected a record ({e.code}), see {REJECTED}")
+      cloudlog.warning(f"oild: upload HTTP {e.code}")
     except Exception as e:
       left.insert(0, rec)
-      set_status(f"queued ({len(pending)}), retrying: {type(e).__name__}")
+      set_status(f"saved on comma, no internet: {len(pending)} waiting to upload")
       cloudlog.warning(f"oild: upload failed: {e}")
   with open(QUEUE + ".tmp", "w") as f:
     f.writelines(json.dumps(r) + "\n" for r in left)
@@ -207,7 +217,7 @@ def main():
       with open(QUEUE, "a") as f:
         f.write(json.dumps(rec) + "\n")
       save(STATE, tracker.s)
-      set_status(f"queued: odo {rec['odo_km']} km, trip {rec['trip_km']} km")
+      set_status(f"saved: odo {rec['odo_km']} km, trip {rec['trip_km']} km, uploading...")
       queued = flush_queue(cfg)
       last_retry = now
 

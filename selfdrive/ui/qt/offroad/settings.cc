@@ -276,9 +276,10 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
   addItem(translateBtn);
 
   // fuel log: the oild process picks up the request file and posts to the Atlantis Oil tab
-  auto oilBtn = new ButtonControl(tr("Fuel Log"), tr("UPLOAD"), "");
+  auto oilBtn = new ButtonControl(tr("Fuel Log"), tr("SAVE"), tr("Saves odometer + trip on the comma and uploads when online"));
   connect(oilBtn, &ButtonControl::showDescriptionEvent, [=]() {
-    oilBtn->setDescription(QString::fromStdString(util::read_file("/data/oil/status.txt")));
+    const QString st = QString::fromStdString(util::read_file("/data/oil/status.txt"));
+    oilBtn->setDescription(st.isEmpty() ? tr("Saves odometer + trip on the comma and uploads when online") : st);
   });
   connect(oilBtn, &ButtonControl::clicked, [=]() {
     // pump values: any two of baht / price per litre / litres give the third (oild fills it in); all empty = enter on the web
@@ -295,7 +296,7 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     const std::string req = QString("{\"baht\":\"%1\",\"price_per_l\":\"%2\",\"litre\":\"%3\"}")
                               .arg(baht.trimmed(), price.trimmed(), litre.trimmed()).toStdString();
     util::write_file("/data/oil/request", req.data(), req.size(), O_WRONLY | O_CREAT | O_TRUNC);
-    oilBtn->setDescription(tr("Queued, sending..."));
+    oilBtn->setDescription(tr("Saved, uploading when online..."));
     oilBtn->showDescription();
   });
   addItem(oilBtn);
