@@ -18,8 +18,36 @@ CONFIG = f"{OIL_DIR}/config.json"      # {"url": ..., "token": ..., "units_per_l
 QUEUE = f"{OIL_DIR}/queue.jsonl"
 REQUEST = f"{OIL_DIR}/request"         # created by the UI button
 STATUS = f"{OIL_DIR}/status.txt"       # shown under the UI button
+LAST_PRICE = f"{OIL_DIR}/last_price.txt"  # default for the next price input
 PT_BUS = 0
 CTR_WRAP = 65536
+
+
+def _num(txt):
+  try:
+    v = float(str(txt).replace(",", "").strip())
+    return v if v > 0 else None
+  except ValueError:
+    return None
+
+
+def parse_pump(raw: str) -> dict:
+  """UI request: {"baht","price_per_l","litre"} as text; any two give the third. A bare number is baht."""
+  try:
+    d = json.loads(raw)
+  except ValueError:
+    d = None
+  if not isinstance(d, dict):
+    d = {"baht": raw}
+  baht, price, litre = _num(d.get("baht", "")), _num(d.get("price_per_l", "")), _num(d.get("litre", ""))
+  if baht and price and not litre:
+    litre = baht / price
+  elif baht and litre and not price:
+    price = baht / litre
+  elif price and litre and not baht:
+    baht = price * litre
+  r = lambda v, n: round(v, n) if v else None
+  return {"baht": r(baht, 2), "price_per_l": r(price, 2), "litre": r(litre, 3)}
 
 
 def load(path, default):
@@ -168,14 +196,14 @@ def main():
 
     if os.path.exists(REQUEST):
       with open(REQUEST) as f:
-        baht_txt = f.read().strip().replace(",", "")
+        pump = parse_pump(f.read())
       os.remove(REQUEST)
       cfg = load(CONFIG, {})
       rec = tracker.take_record(cfg)
-      try:
-        rec["baht"] = float(baht_txt) if baht_txt else None
-      except ValueError:
-        rec["baht"] = None
+      rec.update(pump)
+      if pump["price_per_l"]:
+        with open(LAST_PRICE, "w") as f:
+          f.write(f"{pump['price_per_l']:g}")
       with open(QUEUE, "a") as f:
         f.write(json.dumps(rec) + "\n")
       save(STATE, tracker.s)

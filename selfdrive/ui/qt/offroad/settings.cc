@@ -281,10 +281,19 @@ DevicePanel::DevicePanel(SettingsWindow *parent) : ListWidget(parent) {
     oilBtn->setDescription(QString::fromStdString(util::read_file("/data/oil/status.txt")));
   });
   connect(oilBtn, &ButtonControl::clicked, [=]() {
-    // baht paid at the pump; empty = fill it in on the web later
-    QString baht = InputDialog::getText(tr("Baht paid (empty = enter on the web later)"), this, tr("Upload fuel log: odometer and trip are added automatically"), false, -1);
+    // pump values: any two of baht / price per litre / litres give the third (oild fills it in); all empty = enter on the web
+    QString baht = InputDialog::getText(tr("Baht paid"), this, tr("Leave empty to enter it on the web later"), false, -1);
     if (baht.isNull()) return;  // cancelled
-    const std::string req = baht.trimmed().toStdString();
+    const QString last_price = QString::fromStdString(util::read_file("/data/oil/last_price.txt")).trimmed();
+    QString price = InputDialog::getText(tr("Price per litre"), this, tr("Leave empty to enter litres instead"), false, -1, last_price);
+    if (price.isNull()) return;
+    QString litre;
+    if (baht.trimmed().isEmpty() || price.trimmed().isEmpty()) {
+      litre = InputDialog::getText(tr("Litres"), this, tr("Leave empty if unknown"), false, -1);
+      if (litre.isNull()) return;
+    }
+    const std::string req = QString("{\"baht\":\"%1\",\"price_per_l\":\"%2\",\"litre\":\"%3\"}")
+                              .arg(baht.trimmed(), price.trimmed(), litre.trimmed()).toStdString();
     util::write_file("/data/oil/request", req.data(), req.size(), O_WRONLY | O_CREAT | O_TRUNC);
     oilBtn->setDescription(tr("Queued, sending..."));
     oilBtn->showDescription();
