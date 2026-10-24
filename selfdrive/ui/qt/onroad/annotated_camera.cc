@@ -7,6 +7,7 @@
 
 #include "common/swaglog.h"
 #include "selfdrive/ui/qt/util.h"
+#include "selfdrive/ui/qt/widgets/input.h"
 
 // Window that shows camera view and variety of info drawn on top
 AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget *parent)
@@ -19,12 +20,35 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget *par
 
   experimental_btn = new ExperimentalButton(this);
   main_layout->addWidget(experimental_btn, 0, Qt::AlignTop | Qt::AlignRight);
+
+  // comma power gives no 12V after ignition off, so offer a clean power-off before switching the car off.
+  // Placed under the engine temp on the right edge (positioned in updateState).
+  shutdown_btn = new QPushButton(tr("Shutdown"), this);
+  shutdown_btn->setFixedSize(320, 110);
+  shutdown_btn->setStyleSheet(R"(
+    QPushButton { font-size: 44px; font-weight: 500; color: white; border-radius: 30px;
+                  background-color: rgba(0, 0, 0, 140); border: 3px solid rgba(255, 255, 255, 90); }
+    QPushButton:pressed { background-color: rgba(226, 44, 44, 200); }
+  )");
+  QObject::connect(shutdown_btn, &QPushButton::clicked, [=]() {
+    if (!standstill) {
+      ConfirmationDialog::alert(tr("Stop the car before shutting down"), this);
+      return;
+    }
+    if (ConfirmationDialog::confirm(tr("Power off the comma now?"), tr("Power Off"), this)) {
+      Params().putBool("DoShutdown", true);
+    }
+  });
 }
 
 void AnnotatedCameraWidget::updateState(const UIState &s) {
   // update engageability/experimental mode button
   experimental_btn->updateState(s);
   dmon.updateState(s);
+
+  const SubMaster &sm = *(s.sm);
+  standstill = sm.rcv_frame("carState") < s.scene.started_frame || sm["carState"].getCarState().getVEgo() < 0.5;
+  shutdown_btn->move(width() - 60 - shutdown_btn->width(), height() / 2 + 150);
 }
 
 void AnnotatedCameraWidget::initializeGL() {

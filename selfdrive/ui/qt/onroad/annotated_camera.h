@@ -18,6 +18,8 @@ public:
 private:
   QVBoxLayout *main_layout;
   ExperimentalButton *experimental_btn;
+  QPushButton *shutdown_btn;
+  bool standstill = true;
   DriverMonitorRenderer dmon;
   HudRenderer hud;
   ModelRenderer model;
