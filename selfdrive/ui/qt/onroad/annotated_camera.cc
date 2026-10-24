@@ -31,12 +31,16 @@ AnnotatedCameraWidget::AnnotatedCameraWidget(VisionStreamType type, QWidget *par
     QPushButton:pressed { background-color: rgba(226, 44, 44, 200); }
   )");
   QObject::connect(shutdown_btn, &QPushButton::clicked, [=]() {
-    if (!standstill) {
-      ConfirmationDialog::alert(tr("Stop the car before shutting down"), this);
+    // allowed while moving (user switches off a few hundred metres before arriving), but only when openpilot is not engaged
+    if (uiState()->engaged()) {
+      ConfirmationDialog::alert(tr("Disengage openpilot before shutting down"), this);
       return;
     }
     if (ConfirmationDialog::confirm(tr("Power off the comma now?"), tr("Power Off"), this)) {
-      Params().putBool("DoShutdown", true);
+      // check again in case it engaged while the dialog was open
+      if (!uiState()->engaged()) {
+        Params().putBool("DoShutdown", true);
+      }
     }
   });
 }
@@ -46,8 +50,6 @@ void AnnotatedCameraWidget::updateState(const UIState &s) {
   experimental_btn->updateState(s);
   dmon.updateState(s);
 
-  const SubMaster &sm = *(s.sm);
-  standstill = sm.rcv_frame("carState") < s.scene.started_frame || sm["carState"].getCarState().getVEgo() < 0.5;
   shutdown_btn->move(width() - 60 - shutdown_btn->width(), height() / 2 + 150);
 }
 
