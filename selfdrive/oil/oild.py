@@ -134,13 +134,15 @@ def flush_queue(cfg) -> int:
   for rec in pending[:1]:
     try:
       req = urllib.request.Request(cfg["url"], data=json.dumps(rec).encode(), method="POST",
-                                   headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['token']}"})
+                                   headers={"Content-Type": "application/json", "Authorization": f"Bearer {cfg['token']}",
+                                            # Cloudflare blocks the default Python-urllib agent (error 1010)
+                                            "User-Agent": "oild/1.0 (comma3-hrv)"})
       with urllib.request.urlopen(req, timeout=10) as r:
         if r.status // 100 != 2:
           raise RuntimeError(f"HTTP {r.status}")
       set_status(f"uploaded: odo {rec['odo_km']} km, trip {rec['trip_km']} km" + (f" ({len(left)} more waiting)" if left else ""))
     except urllib.error.HTTPError as e:
-      if e.code == 429 or e.code >= 500:
+      if e.code in (403, 429) or e.code >= 500:  # 403 can be a Cloudflare edge block, keep it
         left.insert(0, rec)
         set_status(f"saved on comma, server busy ({e.code}), {len(pending)} waiting")
       else:
